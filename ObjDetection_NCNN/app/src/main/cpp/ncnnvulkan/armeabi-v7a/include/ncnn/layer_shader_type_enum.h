@@ -363,4 +363,5 @@ swish = 357,
 swish_pack4 = 358,
 swish_pack8 = 359,
 convert_ycbcr = 360,
+vulkan_activation = 361,
 

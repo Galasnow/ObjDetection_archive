@@ -94,4 +94,5 @@ Deconvolution1D = 88,
 DeconvolutionDepthWise1D = 89,
 Deconvolution3D = 90,
 DeconvolutionDepthWise3D = 91,
+Einsum = 92,
 

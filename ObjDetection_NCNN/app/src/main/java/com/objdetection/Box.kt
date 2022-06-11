@@ -4,7 +4,6 @@ import android.graphics.Color
 import android.graphics.RectF
 import java.util.*
 
-
 class Box(
     var x0: Float,
     var y0: Float,
@@ -12,7 +11,6 @@ class Box(
     var y1: Float,
     private val label: Int,
     private val score: Float
-    //val score: Float
 ) {
     fun getRect(): RectF {
         return RectF(x0, y0, x1, y1)
@@ -21,10 +19,11 @@ class Box(
     fun getLabel(): String {
         return com.objdetection.Box.Companion.labels.get(label)
     }
-    //@JvmName("getScore1")
+
     fun getScore(): Float {
         return score
     }
+
     fun getColor(): Int {
         val random = Random(label.toLong())
         return Color.argb(255, random.nextInt(256), random.nextInt(256), random.nextInt(256))
@@ -41,7 +40,6 @@ class Box(
             "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
             "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
             "hair drier", "toothbrush"
-
         )
     }
 }

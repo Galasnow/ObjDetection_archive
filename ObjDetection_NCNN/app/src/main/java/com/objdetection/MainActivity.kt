@@ -25,6 +25,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
+import coil.load
 import com.objdetection.databinding.ActivityMainBinding
 import wseemann.media.FFmpegMediaMetadataRetriever
 import java.io.ByteArrayOutputStream
@@ -45,16 +46,16 @@ class MainActivity : AppCompatActivity() {
     private val YOLOV5S = 2
     private val YOLOV4_TINY = 3
 
-    private var USE_MODEL = NANODET
-    private var USE_GPU = false
+    private var useModel = NANODET
+    private var useGPU = false
 
     var threshold = 0.3
-    var nms_threshold = 0.7
+    var nmsThreshold = 0.7
 
     var videoSpeed = 1.0f
     var videoCurFrameLoc: Long = 0
-    private val VIDEO_SPEED_MAX = 20 + 1
-    private val VIDEO_SPEED_MIN = 1
+    private val videoSpeedMax = 20 + 1
+    private val videoSpeedMin = 1
 
     private val detectCamera = AtomicBoolean(false)
     private val detectPhoto = AtomicBoolean(false)
@@ -69,8 +70,8 @@ class MainActivity : AppCompatActivity() {
 
     private var startTime: Long = 0
     private var endTime: Long = 0
-    private var total_fps = 0.0
-    private var fps_count = 0.0
+    private var totalFPS = 0.0
+    private var FPSCount = 0.0
 
     private var mutableBitmap: Bitmap? = null
 //    private var mReusableBitmap: Bitmap? = null
@@ -88,7 +89,7 @@ class MainActivity : AppCompatActivity() {
 
 //    private var pauseAnalysis = false
 
-    var mmr: FFmpegMediaMetadataRetriever? = null
+    private var mmr: FFmpegMediaMetadataRetriever? = null
 
 //    var reusableBitmaps: MutableSet<SoftReference<Bitmap>>? = null
 //    private lateinit var memoryCache: LruCache<String, BitmapDrawable>
@@ -101,8 +102,8 @@ class MainActivity : AppCompatActivity() {
 
         //获取开始界面传送的是否使用GPU和使用模型类型的信息
         val intent = intent
-        USE_GPU = intent.getBooleanExtra("USE_GPU", false)
-        USE_MODEL = intent.getIntExtra("USE_MODEL", NANODET)
+        useGPU = intent.getBooleanExtra("useGPU", false)
+        useModel = intent.getIntExtra("useModel", NANODET)
 
         initModel()
         initView()
@@ -117,7 +118,7 @@ class MainActivity : AppCompatActivity() {
 
         //替代StartActivityForResult()
         //选取图片
-        val PhotoActivity =
+        val photoActivity =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (it.data != null && it.resultCode == Activity.RESULT_OK) {
                     runByPhoto(it.resultCode, it.data)
@@ -138,14 +139,14 @@ class MainActivity : AppCompatActivity() {
                     777
                 )
             } else {
-                val intent_photo = Intent(Intent.ACTION_PICK)
-                intent_photo.type = "image/*"
-                PhotoActivity.launch(intent_photo)
+                val intentPhoto = Intent(Intent.ACTION_PICK)
+                intentPhoto.type = "image/*"
+                photoActivity.launch(intentPhoto)
             }
         }
 
         //选取视频
-        val VideoActivity =
+        val videoActivity =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (it.data != null && it.resultCode == Activity.RESULT_OK) {
                     runByVideo(it.resultCode, it.data)
@@ -165,25 +166,25 @@ class MainActivity : AppCompatActivity() {
                     777
                 )
             } else {
-                val intent_video = Intent(Intent.ACTION_PICK)
-                intent_video.type = "video/*"
-                VideoActivity.launch(intent_video)
+                val intentVideo = Intent(Intent.ACTION_PICK)
+                intentVideo.type = "video/*"
+                videoActivity.launch(intentVideo)
             }
         }
     }
     //初始化选取的模型
     private fun initModel() {
-        when (USE_MODEL) {
-            NANODET -> NanoDet.init(assets, USE_GPU)
-            YOLOV5S -> YOLOv5.init(assets, USE_GPU)
-            YOLOV4_TINY -> YOLOv4.init(assets, 0, USE_GPU)
+        when (useModel) {
+            NANODET -> NanoDetPlus.init(assets, useGPU)
+            YOLOV5S -> YOLOv5.init(assets, useGPU)
+            YOLOV4_TINY -> YOLOv4tiny.init(assets, 0, useGPU)
         }
     }
     //初始化界面
     private fun initView() {
         binding.sbVideo.visibility = View.GONE
-        binding.sbVideoSpeed.min = VIDEO_SPEED_MIN
-        binding.sbVideoSpeed.max = VIDEO_SPEED_MAX
+        binding.sbVideoSpeed.min = videoSpeedMin
+        binding.sbVideoSpeed.max = videoSpeedMax
         binding.sbVideoSpeed.visibility = View.GONE
         binding.btnBack.visibility = View.GONE
     }
@@ -191,7 +192,7 @@ class MainActivity : AppCompatActivity() {
     private fun initViewListener() {
         binding.toolBar.setNavigationIcon(R.drawable.actionbar_dark_back_icon)
         binding.toolBar.setNavigationOnClickListener { finish() }
-        if (USE_MODEL != NANODET && USE_MODEL != YOLOV5S) {
+        if (useModel != NANODET && useModel != YOLOV5S) {
             binding.nmsSeek.isEnabled = false
             binding.thresholdSeek.isEnabled = false
             binding.txtNMS.visibility = View.GONE
@@ -199,24 +200,24 @@ class MainActivity : AppCompatActivity() {
             binding.nmsSeek.visibility = View.GONE
             binding.thresholdSeek.visibility = View.GONE
             binding.valTxtView.visibility = View.GONE
-        } else if (USE_MODEL == NANODET) {
+        } else if (useModel == NANODET) {
             threshold = 0.4
-            nms_threshold = 0.6
-        } else if (USE_MODEL == YOLOV5S) {
+            nmsThreshold = 0.6
+        } else if (useModel == YOLOV5S) {
             threshold = 0.3
-            nms_threshold = 0.7
+            nmsThreshold = 0.7
         }
-        binding.nmsSeek.progress = (nms_threshold * 100).toInt()
+        binding.nmsSeek.progress = (nmsThreshold * 100).toInt()
         binding.thresholdSeek.progress = (threshold * 100).toInt()
         val format = "THR: %.2f, NMS: %.2f"
         binding.valTxtView.text =
-            String.format(Locale.ENGLISH, format, threshold, nms_threshold)
+            String.format(Locale.ENGLISH, format, threshold, nmsThreshold)
 
         binding.nmsSeek.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                nms_threshold = (i / 100f).toDouble()
+                nmsThreshold = (i / 100f).toDouble()
                 binding.valTxtView.text =
-                    String.format(Locale.ENGLISH, format, threshold, nms_threshold)
+                    String.format(Locale.ENGLISH, format, threshold, nmsThreshold)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
@@ -227,7 +228,7 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                 threshold = (i / 100f).toDouble()
                 binding.valTxtView.text =
-                    String.format(Locale.ENGLISH, format, threshold, nms_threshold)
+                    String.format(Locale.ENGLISH, format, threshold, nmsThreshold)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
@@ -467,13 +468,13 @@ class MainActivity : AppCompatActivity() {
 //            }
             endTime = System.currentTimeMillis()
             val dur = endTime - startTime
-            Log.d(TAG, "dur time is: $dur")
+//            Log.d(TAG, "dur time is: $dur")
             val fps = (1000.0 / dur).toFloat()
             //更新API后，有时fps为Infinity，正在debug
             //排除帧率过高的异常
             if (fps < 1000) {
-                total_fps = if (total_fps == 0.0) fps.toDouble() else total_fps + fps
-                fps_count++
+                totalFPS = if (totalFPS == 0.0) fps.toDouble() else totalFPS + fps
+                FPSCount++
             }
             else
                 Log.d(TAG, "Infinity")
@@ -481,24 +482,24 @@ class MainActivity : AppCompatActivity() {
             binding.tvInfo.text = String.format(
                 Locale.CHINESE,
                 "%s\nSize: %dx%d\nTime: %.3f s\nFPS: %.3f\nAVG_FPS: %.3f",
-                modelName, height, width, dur / 1000.0, fps, total_fps.toFloat() / fps_count
+                modelName, height, width, dur / 1000.0, fps, totalFPS.toFloat() / FPSCount
             )
         }
     }
 
     private fun detectAndDraw(image: Bitmap): Bitmap? {
         var result: Array<Box>? = null
-        when (USE_MODEL) {
-            NANODET -> result = NanoDet.detect(image, threshold, nms_threshold)
-            YOLOV5S -> result = YOLOv5.detect(image, threshold, nms_threshold)
-            YOLOV4_TINY -> result = YOLOv4.detect(image, threshold, nms_threshold)
+        when (useModel) {
+            NANODET -> result = NanoDetPlus.detect(image, threshold, nmsThreshold)
+            YOLOV5S -> result = YOLOv5.detect(image, threshold, nmsThreshold)
+            YOLOV4_TINY -> result = YOLOv4tiny.detect(image, threshold, nmsThreshold)
         }
 
         if (result == null) {
             detectCamera.set(false)
             return image
         }
-        if (USE_MODEL == NANODET || USE_MODEL == YOLOV5S || USE_MODEL == YOLOV4_TINY ) {
+        if (useModel == NANODET || useModel == YOLOV5S || useModel == YOLOV4_TINY ) {
             mutableBitmap = drawBoxRects(image, result)
         }
         return mutableBitmap
@@ -506,28 +507,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun getModelName(): String {
         var modelName = "NULL"
-        when (USE_MODEL) {
-            NANODET -> modelName = "NanoDet_Plus"
+        when (useModel) {
+            NANODET -> modelName = "NanoDet-Plus"
             YOLOV5S -> modelName = "YOLOv5s"
             YOLOV4_TINY -> modelName = "YOLOv4-tiny"
         }
-        return if (USE_GPU) "[ GPU ] $modelName" else "[ CPU ] $modelName"
+        return if (useGPU) "[ GPU ] $modelName" else "[ CPU ] $modelName"
     }
 
-    private fun drawBoxRects(mutableBitmap: Bitmap, results: Array<Box>?): Bitmap {
+    private fun drawBoxRects(bitmap: Bitmap, results: Array<Box>?): Bitmap {
         //if (results == null || results.size <= 0) {
         if (results == null || results.isEmpty()) {
-            return mutableBitmap
+            return bitmap
         }
         //copy，否则出错(不允许直接操作bitmap)
-        val mutableBitmap_c = mutableBitmap.copy(Bitmap.Config.ARGB_8888, true)
+        val bitmapCopy = bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
-        val canvas = Canvas(mutableBitmap_c)
+        val canvas = Canvas(bitmapCopy)
         val boxPaint = Paint()
         boxPaint.alpha = 200
         boxPaint.style = Paint.Style.STROKE
-        boxPaint.strokeWidth = 4 * mutableBitmap_c.width / 800.0f
-        boxPaint.textSize = 30 * mutableBitmap_c.width / 800.0f
+        boxPaint.strokeWidth = 4 * bitmapCopy.width / 800.0f
+        boxPaint.textSize = 30 * bitmapCopy.width / 800.0f
         for (box in results) {
             boxPaint.color = box.getColor()
             boxPaint.style = Paint.Style.FILL
@@ -536,12 +537,12 @@ class MainActivity : AppCompatActivity() {
                     Locale.CHINESE,
                     " %.3f",
                     box.getScore()
-                ), box.x0 + 3, box.y0 + 30 * mutableBitmap_c.width / 1000.0f, boxPaint
+                ), box.x0 + 3, box.y0 + 30 * bitmapCopy.width / 1000.0f, boxPaint
             )
             boxPaint.style = Paint.Style.STROKE
             canvas.drawRect(box.getRect(), boxPaint)
         }
-        return mutableBitmap_c
+        return bitmapCopy
     }
 
     private fun runByPhoto(resultCode: Int, data: Intent?) {
@@ -575,8 +576,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 选取的图像太大(25000000这个上限值未求证)
-        // Error: Canvas: trying to draw too large(108000000bytes) bitmap.
+        // 选取的图像太大(25000000这个上限值未求证),大概与内存有关
+        // e.g.:"Error: Canvas: trying to draw too large(108000000bytes) bitmap."
         if((image.width * image.height) > 25000000){
             Toast.makeText(this, "Photo is too large", Toast.LENGTH_SHORT).show()
             return
@@ -584,21 +585,24 @@ class MainActivity : AppCompatActivity() {
 
         val thread = Thread({
             val start = System.currentTimeMillis()
-            val mutableBitmap_c = image.copy(Bitmap.Config.ARGB_8888, true)
+            val imageCopy = image.copy(Bitmap.Config.ARGB_8888, true)
             width = image.width
             height = image.height
-            mutableBitmap = detectAndDraw(mutableBitmap_c)
+            mutableBitmap = detectAndDraw(imageCopy)
             val dur = System.currentTimeMillis() - start
             runOnUiThread {
                 val modelName = getModelName()
-                binding.imageView.setImageBitmap(mutableBitmap)
+                //binding.imageView.setImageBitmap(mutableBitmap)
+                binding.imageView.load(mutableBitmap)
+//                {
+//                    transformations(BlurTransformation())
+//                }
                 binding.tvInfo.text = String.format(
                     Locale.CHINESE, "%s\nSize: %dx%d\nTime: %.3f s\nFPS: %.3f",
                     modelName, height, width, dur / 1000.0, 1000.0f / dur
                 )
             }
         }, "photo detect")
-
         thread.start()
     }
 
@@ -670,8 +674,8 @@ class MainActivity : AppCompatActivity() {
                 cursor.moveToFirst()
                 // String imgNo = cursor.getString(0); // 编号
                 val v_path = cursor.getString(1) // 文件路径
-                val v_size = cursor.getString(2) // 大小
-                val v_name = cursor.getString(3) // 文件名
+//                val v_size = cursor.getString(2) // 大小
+//                val v_name = cursor.getString(3) // 文件名
                 detectOnVideo(v_path)
             } else {
                 Toast.makeText(this, "Video is null", Toast.LENGTH_SHORT).show()
@@ -757,7 +761,6 @@ class MainActivity : AppCompatActivity() {
             detectVideo.set(false)
         }, "video detect")
         thread.start()
-//        startCamera();
     }
 
 

@@ -3,7 +3,7 @@
 #include <ncnn/gpu.h>
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
-#include "NanoDet.h"
+#include "NanoDetPlus.h"
 #include "YoloV5.h"
 #include "YoloV4.h"
 
@@ -12,7 +12,7 @@
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     ncnn::create_gpu_instance();
     if (ncnn::get_gpu_count() > 0) {
-        NanoDet::hasGPU = true;
+        NanoDetPlus::hasGPU = true;
         YoloV5::hasGPU = true;
         YoloV4::hasGPU = true;
     }
@@ -22,30 +22,30 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 
 JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
     ncnn::destroy_gpu_instance();
-    delete NanoDet::detector;
+    delete NanoDetPlus::detector;
     delete YoloV5::detector;
     delete YoloV4::detector;
 //    LOGD("jni onunload");
 }
 
 /*********************************************************************************************
-                                         NanoDet
+                                         NanoDet-Plus
  ********************************************************************************************/
 extern "C" JNIEXPORT void JNICALL
-Java_com_objdetection_NanoDet_init(JNIEnv *env, jobject thiz, jobject assetManager, jboolean useGPU) {
-    if (NanoDet::detector != nullptr) {
-        delete NanoDet::detector;
-        NanoDet::detector = nullptr;
+Java_com_objdetection_NanoDetPlus_init(JNIEnv *env, jobject thiz, jobject assetManager, jboolean useGPU) {
+    if (NanoDetPlus::detector != nullptr) {
+        delete NanoDetPlus::detector;
+        NanoDetPlus::detector = nullptr;
     }
-    if (NanoDet::detector == nullptr) {
+    if (NanoDetPlus::detector == nullptr) {
         AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
-        NanoDet::detector = new NanoDet(mgr, "nanodet.param", "nanodet.bin", useGPU);
+        NanoDetPlus::detector = new NanoDetPlus(mgr, "nanodetplus.param", "nanodetplus.bin", useGPU);
     }
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_objdetection_NanoDet_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
-    auto result = NanoDet::detector->detect(env, image, threshold, nms_threshold);
+Java_com_objdetection_NanoDetPlus_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
+    auto result = NanoDetPlus::detector->detect(env, image, threshold, nms_threshold);
 
     auto box_cls = env->FindClass("com/objdetection/Box");
     auto cid = env->GetMethodID(box_cls, "<init>", "(FFFFIF)V");
@@ -104,7 +104,7 @@ Java_com_objdetection_YOLOv5_detect(JNIEnv *env, jobject thiz, jobject image, jd
 // 20201124 增加 yolo-fastest-xl
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_objdetection_YOLOv4_init(JNIEnv *env, jobject thiz, jobject assetManager, jint yoloType, jboolean useGPU) {
+Java_com_objdetection_YOLOv4tiny_init(JNIEnv *env, jobject thiz, jobject assetManager, jint yoloType, jboolean useGPU) {
     if (YoloV4::detector != nullptr) {
         delete YoloV4::detector;
         YoloV4::detector = nullptr;
@@ -123,7 +123,7 @@ Java_com_objdetection_YOLOv4_init(JNIEnv *env, jobject thiz, jobject assetManage
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_objdetection_YOLOv4_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
+Java_com_objdetection_YOLOv4tiny_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
     auto result = YoloV4::detector->detect(env, image, threshold, nms_threshold);
 
     auto box_cls = env->FindClass("com/objdetection/Box");

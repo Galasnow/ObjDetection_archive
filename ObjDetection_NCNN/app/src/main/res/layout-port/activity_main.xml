@@ -15,17 +15,8 @@
         app:titleTextColor="#FFFFFF"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <Button
-        android:id="@+id/btn_photo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="0dp"
-        android:text="Photo"
-        android:textAllCaps="false"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/threshold_seek" />
+        app:layout_constraintEnd_toEndOf="parent"
+        />
 
     <ImageView
         android:id="@+id/imageView"
@@ -37,7 +28,9 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_photo"
         app:layout_constraintBottom_toTopOf="@+id/view_finder"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintVertical_bias="1.0"
+        />
+    <!--            android:contentDescription="@string/imageView"-->
 
     <androidx.camera.view.PreviewView
         android:id="@+id/view_finder"
@@ -47,8 +40,8 @@
         android:layout_marginTop="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="h,4:3"
-        app:layout_constraintStart_toStartOf="parent" />
-
+        app:layout_constraintStart_toStartOf="parent"
+        />
 
     <TextView
         android:id="@+id/txtNMS"
@@ -59,7 +52,8 @@
         android:text="@string/nms"
         app:layout_constraintEnd_toEndOf="@+id/txtThresh"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tool_bar" />
+        app:layout_constraintTop_toBottomOf="@id/tool_bar"
+        />
 
     <SeekBar
         android:id="@+id/nms_seek"
@@ -73,7 +67,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toEndOf="@+id/txtNMS"
-        app:layout_constraintTop_toBottomOf="@id/tool_bar" />
+        app:layout_constraintTop_toBottomOf="@id/tool_bar"
+        />
 
     <TextView
         android:id="@+id/txtThresh"
@@ -84,7 +79,8 @@
         android:text="@string/threshold"
         app:layout_constraintTop_toBottomOf="@+id/txtNMS"
         app:layout_constraintStart_toStartOf="parent"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints"
+        />
 
     <SeekBar
         android:id="@+id/threshold_seek"
@@ -98,7 +94,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/txtThresh"
-        app:layout_constraintTop_toBottomOf="@+id/nms_seek" />
+        app:layout_constraintTop_toBottomOf="@+id/nms_seek"
+        />
 
     <TextView
         android:id="@+id/valTxtView"
@@ -108,28 +105,8 @@
         android:text="@string/thr_nms"
         app:layout_constraintBottom_toTopOf="@+id/imageView"
         app:layout_constraintStart_toEndOf="@+id/btn_photo"
-        app:layout_constraintTop_toBottomOf="@+id/threshold_seek" />
-
-    <Button
-        android:id="@+id/btn_video"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="0dp"
-        android:text="@string/video"
-        android:textAllCaps="false"
-        app:layout_constraintBottom_toTopOf="@+id/imageView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/threshold_seek" />
-
-    <SeekBar
-        android:id="@+id/sb_video"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAllCaps="false"
-        android:alpha="1.0"
-        app:layout_constraintBottom_toBottomOf="@id/imageView"
-        app:layout_constraintStart_toStartOf="@id/imageView"
-        app:layout_constraintEnd_toEndOf="@id/imageView" />
+        app:layout_constraintTop_toBottomOf="@+id/threshold_seek"
+        />
 
     <TextView
         android:id="@+id/tv_info"
@@ -141,6 +118,40 @@
         android:paddingTop="2dp"
         app:layout_constraintStart_toEndOf="@+id/view_finder"
         app:layout_constraintTop_toBottomOf="@+id/imageView"
+        />
+
+    <Button
+        android:id="@+id/btn_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="0dp"
+        android:text="@string/photo"
+        android:textAllCaps="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/threshold_seek"
+        />
+
+    <Button
+        android:id="@+id/btn_video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="0dp"
+        android:text="@string/video"
+        android:textAllCaps="false"
+        app:layout_constraintBottom_toTopOf="@+id/imageView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/threshold_seek"
+        />
+
+    <SeekBar
+        android:id="@+id/sb_video"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAllCaps="false"
+        android:alpha="1.0"
+        app:layout_constraintBottom_toBottomOf="@id/imageView"
+        app:layout_constraintStart_toStartOf="@id/imageView"
+        app:layout_constraintEnd_toEndOf="@id/imageView"
         />
 
     <SeekBar
@@ -161,6 +172,7 @@
         android:text="@string/back"
         android:textAllCaps="false"
         app:layout_constraintStart_toStartOf="@+id/view_finder"
-        app:layout_constraintTop_toTopOf="@+id/view_finder" />
+        app:layout_constraintTop_toTopOf="@+id/view_finder"
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

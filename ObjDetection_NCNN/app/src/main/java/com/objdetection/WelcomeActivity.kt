@@ -2,13 +2,10 @@ package com.objdetection
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.objdetection.databinding.ActivityWelcomeBinding
-
 
 class WelcomeActivity : AppCompatActivity() {
     private val NANODET = 1
@@ -32,7 +29,7 @@ class WelcomeActivity : AppCompatActivity() {
             dialog.show()
         }
 
-        binding.tbUseGpu.setOnCheckedChangeListener{buttonview, isChecked ->
+        binding.tbUseGpu.setOnCheckedChangeListener{_, isChecked ->
             useGPU = isChecked
             if (useGPU) {
                 val builder = AlertDialog.Builder(this@WelcomeActivity)
@@ -47,27 +44,25 @@ class WelcomeActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnStartDetect0.setOnClickListener(View.OnClickListener {
+        binding.btnStartDetect0.setOnClickListener {
             val intent = Intent(this@WelcomeActivity, MainActivity::class.java)
-            intent.putExtra("USE_GPU",useGPU)
-            intent.putExtra("USE_MODEL",NANODET)
+            intent.putExtra("useGPU", useGPU)
+            intent.putExtra("useModel", NANODET)
             this@WelcomeActivity.startActivity(intent)
-        })
+        }
 
-        binding.btnStartDetect1.setOnClickListener(View.OnClickListener {
+        binding.btnStartDetect1.setOnClickListener {
             val intent = Intent(this@WelcomeActivity, MainActivity::class.java)
-            intent.putExtra("USE_GPU",useGPU)
-            intent.putExtra("USE_MODEL",YOLOV5S)
+            intent.putExtra("useGPU", useGPU)
+            intent.putExtra("useModel", YOLOV5S)
             this@WelcomeActivity.startActivity(intent)
-        })
+        }
 
-        binding.btnStartDetect2.setOnClickListener(View.OnClickListener {
+        binding.btnStartDetect2.setOnClickListener {
             val intent = Intent(this@WelcomeActivity, MainActivity::class.java)
-            intent.putExtra("USE_GPU",useGPU)
-            intent.putExtra("USE_MODEL",YOLOV4_TINY)
+            intent.putExtra("useGPU", useGPU)
+            intent.putExtra("useModel", YOLOV4_TINY)
             this@WelcomeActivity.startActivity(intent)
-        })
-
+        }
     }
-
 }

@@ -21,10 +21,10 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        native-lib.cpp
+#        native-lib.cpp
         YoloV5.cpp
         YoloV4.cpp
-        NanoDet.cpp
+        NanoDetPlus.cpp
         jni_interface.cpp
         )
 

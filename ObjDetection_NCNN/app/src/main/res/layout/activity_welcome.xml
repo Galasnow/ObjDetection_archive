@@ -17,7 +17,8 @@
         android:textOn=""
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        />
 
     <Button
         android:id="@+id/waring_button"
@@ -52,25 +53,28 @@
                 android:id="@+id/btn_start_detect0"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/nanodet_plus"
+                android:text="@string/NanoDet_Plus"
                 android:textAllCaps="false"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                />
 
             <Button
                 android:id="@+id/btn_start_detect1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/yolov5s"
+                android:text="@string/YOLOv5s"
                 android:textAllCaps="false"
-                app:layout_constraintTop_toBottomOf="@id/btn_start_detect0" />
+                app:layout_constraintTop_toBottomOf="@id/btn_start_detect0"
+                />
 
             <Button
                 android:id="@+id/btn_start_detect2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/yolov4_tiny"
+                android:text="@string/YOLOv4_tiny"
                 android:textAllCaps="false"
-                app:layout_constraintTop_toBottomOf="@id/btn_start_detect1" />
+                app:layout_constraintTop_toBottomOf="@id/btn_start_detect1"
+                />
         </LinearLayout>
     </ScrollView>
 
