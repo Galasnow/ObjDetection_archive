@@ -10,8 +10,17 @@ YoloV4::YoloV4(AAssetManager *mgr, const char *param, const char *bin, bool useG
 
     Net = new ncnn::Net();
     // opt 需要在加载前设置
-    Net->opt.use_vulkan_compute = toUseGPU;  // gpu
-    Net->opt.use_fp16_arithmetic = true;  // fp16运算加速
+    if (toUseGPU) {
+        // enable vulkan compute
+        this->Net->opt.use_vulkan_compute = true;
+        // turn on for adreno
+        this->Net->opt.use_image_storage = true;
+        this->Net->opt.use_tensor_storage = true;
+    }
+    // enable bf16 data type for storage
+    // improve most operator performance on all arm devices, may consume more memory
+    this->Net->opt.use_bf16_storage = true;
+
     Net->load_param(mgr, param);
     Net->load_model(mgr, bin);
 }

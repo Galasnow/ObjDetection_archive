@@ -5,6 +5,7 @@
 #include "NanoDetPlus.h"
 
 bool NanoDetPlus::hasGPU = true;
+bool NanoDetPlus::toUseGPU = false;
 NanoDetPlus* NanoDetPlus::detector = nullptr;
 
 inline float fast_exp(float x)
@@ -64,10 +65,19 @@ static void generate_grid_center_priors(const int input_height, const int input_
 NanoDetPlus::NanoDetPlus(AAssetManager *mgr, const char *param, const char *bin, bool useGPU) {
     this->Net = new ncnn::Net();
     hasGPU = ncnn::get_gpu_count() > 0;
-    this->Net->opt.use_vulkan_compute = false; //hasGPU && useGPU;  // gpu
-    this->Net->opt.use_fp16_arithmetic = true;
-    this->Net->opt.use_fp16_packed = true;
-    this->Net->opt.use_fp16_storage = true;
+    toUseGPU = hasGPU && useGPU;
+    // opt 需要在加载前设置
+    if (toUseGPU) {
+        // enable vulkan compute
+        this->Net->opt.use_vulkan_compute = true;
+        // turn on for adreno
+        this->Net->opt.use_image_storage = true;
+        this->Net->opt.use_tensor_storage = true;
+    }
+    // enable bf16 data type for storage
+    // improve most operator performance on all arm devices, may consume more memory
+    this->Net->opt.use_bf16_storage = true;
+
     this->Net->load_param(mgr, param);
     this->Net->load_model(mgr, bin);
 }
@@ -100,8 +110,11 @@ std::vector<BoxInfo> NanoDetPlus::detect(JNIEnv *env, jobject image, float score
     auto ex = this->Net->create_extractor();
     ex.set_light_mode(true);
     ex.set_num_threads(4);
-    hasGPU = ncnn::get_gpu_count() > 0;
+//    hasGPU = ncnn::get_gpu_count() > 0;
     //ex.set_vulkan_compute(hasGPU);
+    if (toUseGPU) {  // 消除提示
+        ex.set_vulkan_compute(toUseGPU);
+    }
     ex.input("data", input);
     std::vector<std::vector<BoxInfo>> results;
     results.resize(this->num_class);

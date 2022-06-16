@@ -60,6 +60,7 @@ private:
 public:
     static NanoDetPlus *detector;
     static bool hasGPU;
+    static bool toUseGPU;
 };
 
 

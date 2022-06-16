@@ -7,7 +7,7 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.objdetection"
+        applicationId "com.objdetection.ncnn"
         minSdk 26
         targetSdk 33
         versionCode 2
