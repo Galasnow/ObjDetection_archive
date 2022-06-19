@@ -4,8 +4,8 @@
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
 #include "NanoDetPlus.h"
-#include "YoloV5.h"
-#include "YoloV4.h"
+#include "YOLOv5s.h"
+#include "YOLOv4.h"
 
 
 
@@ -13,8 +13,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     ncnn::create_gpu_instance();
     if (ncnn::get_gpu_count() > 0) {
         NanoDetPlus::hasGPU = true;
-        YoloV5::hasGPU = true;
-        YoloV4::hasGPU = true;
+        YOLOv5s::hasGPU = true;
+        YOLOv4::hasGPU = true;
     }
 //    LOGD("jni onload");
     return JNI_VERSION_1_6;
@@ -23,8 +23,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
     ncnn::destroy_gpu_instance();
     delete NanoDetPlus::detector;
-    delete YoloV5::detector;
-    delete YoloV4::detector;
+    delete YOLOv5s::detector;
+    delete YOLOv4::detector;
 //    LOGD("jni onunload");
 }
 
@@ -53,7 +53,8 @@ Java_com_objdetection_NanoDetPlus_detect(JNIEnv *env, jobject thiz, jobject imag
     int i = 0;
     for (auto &box:result) {
         env->PushLocalFrame(1);
-        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.x2, box.y2, box.label, box.score);
+//        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.x2, box.y2, box.label, box.score);
+        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.w, box.h, box.label, box.score);
         obj = env->PopLocalFrame(obj);
         env->SetObjectArrayElement(ret, i++, obj);
     }
@@ -62,23 +63,23 @@ Java_com_objdetection_NanoDetPlus_detect(JNIEnv *env, jobject thiz, jobject imag
 
 
 /*********************************************************************************************
-                                         Yolov5
+                                         YOLOv5s
  ********************************************************************************************/
 extern "C" JNIEXPORT void JNICALL
-Java_com_objdetection_YOLOv5_init(JNIEnv *env, jobject thiz, jobject assetManager, jboolean useGPU) {
-    if (YoloV5::detector != nullptr) {
-        delete YoloV5::detector;
-        YoloV5::detector = nullptr;
+Java_com_objdetection_YOLOv5s_init(JNIEnv *env, jobject thiz, jobject assetManager, jboolean useGPU) {
+    if (YOLOv5s::detector != nullptr) {
+        delete YOLOv5s::detector;
+        YOLOv5s::detector = nullptr;
     }
-    if (YoloV5::detector == nullptr) {
+    if (YOLOv5s::detector == nullptr) {
         AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
-        YoloV5::detector = new YoloV5(mgr, "yolov5.param", "yolov5.bin", useGPU);
+        YOLOv5s::detector = new YOLOv5s(mgr, "yolov5s.ncnn.param", "yolov5s.ncnn.bin", useGPU);
     }
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_objdetection_YOLOv5_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
-    auto result = YoloV5::detector->detect(env, image, threshold, nms_threshold);
+Java_com_objdetection_YOLOv5s_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
+    auto result = YOLOv5s::detector->detect(env, image, threshold, nms_threshold);
 
     auto box_cls = env->FindClass("com/objdetection/Box");
     auto cid = env->GetMethodID(box_cls, "<init>", "(FFFFIF)V");
@@ -86,7 +87,8 @@ Java_com_objdetection_YOLOv5_detect(JNIEnv *env, jobject thiz, jobject image, jd
     int i = 0;
     for (auto &box:result) {
         env->PushLocalFrame(1);
-        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.x2, box.y2, box.label, box.score);
+//        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.x2, box.y2, box.label, box.score);
+        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.w, box.h, box.label, box.score);
         obj = env->PopLocalFrame(obj);
         env->SetObjectArrayElement(ret, i++, obj);
     }
@@ -105,26 +107,26 @@ Java_com_objdetection_YOLOv5_detect(JNIEnv *env, jobject thiz, jobject image, jd
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_objdetection_YOLOv4tiny_init(JNIEnv *env, jobject thiz, jobject assetManager, jint yoloType, jboolean useGPU) {
-    if (YoloV4::detector != nullptr) {
-        delete YoloV4::detector;
-        YoloV4::detector = nullptr;
+    if (YOLOv4::detector != nullptr) {
+        delete YOLOv4::detector;
+        YOLOv4::detector = nullptr;
     }
-    if (YoloV4::detector == nullptr) {
+    if (YOLOv4::detector == nullptr) {
         AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
         if (yoloType == 0) {
-            YoloV4::detector = new YoloV4(mgr, "yolov4-tiny-opt.param", "yolov4-tiny-opt.bin", useGPU);
-        } else if (yoloType == 1) {
-            YoloV4::detector = new YoloV4(mgr, "MobileNetV2-YOLOv3-Nano-coco.param",
-                                          "MobileNetV2-YOLOv3-Nano-coco.bin", useGPU);
-        } else if (yoloType == 2) {
-            YoloV4::detector = new YoloV4(mgr, "yolo-fastest-opt.param", "yolo-fastest-opt.bin", useGPU);
+            YOLOv4::detector = new YOLOv4(mgr, "yolov4-tiny-opt.param", "yolov4-tiny-opt.bin", useGPU);
+//        } else if (yoloType == 1) {
+//            YOLOv4::detector = new YOLOv4(mgr, "MobileNetV2-YOLOv3-Nano-coco.param",
+//                                          "MobileNetV2-YOLOv3-Nano-coco.bin", useGPU);
+//        } else if (yoloType == 2) {
+//            YOLOv4::detector = new YOLOv4(mgr, "yolo-fastest-opt.param", "yolo-fastest-opt.bin", useGPU);
         }
     }
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_com_objdetection_YOLOv4tiny_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
-    auto result = YoloV4::detector->detect(env, image, threshold, nms_threshold);
+    auto result = YOLOv4::detector->detect(env, image, threshold, nms_threshold);
 
     auto box_cls = env->FindClass("com/objdetection/Box");
     auto cid = env->GetMethodID(box_cls, "<init>", "(FFFFIF)V");
@@ -132,7 +134,8 @@ Java_com_objdetection_YOLOv4tiny_detect(JNIEnv *env, jobject thiz, jobject image
     int i = 0;
     for (auto &box:result) {
         env->PushLocalFrame(1);
-        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.x2, box.y2, box.label, box.score);
+//        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.x2, box.y2, box.label, box.score);
+        jobject obj = env->NewObject(box_cls, cid, box.x1, box.y1, box.w, box.h, box.label, box.score);
         obj = env->PopLocalFrame(obj);
         env->SetObjectArrayElement(ret, i++, obj);
     }

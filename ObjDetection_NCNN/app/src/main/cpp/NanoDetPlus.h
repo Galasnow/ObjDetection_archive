@@ -7,7 +7,7 @@
 #define NanoDetPlus_H
 
 #include "net.h"
-#include "YoloV5.h"
+#include "YOLOv5s.h"
 
 typedef struct HeadInfo_
 {

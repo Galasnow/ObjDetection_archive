@@ -7,17 +7,19 @@ import java.util.*
 class Box(
     var x0: Float,
     var y0: Float,
-    var x1: Float,
-    var y1: Float,
+//    var x1: Float,
+//    var y1: Float,
+    var w: Float,
+    var h: Float,
     private val label: Int,
     private val score: Float
 ) {
     fun getRect(): RectF {
-        return RectF(x0, y0, x1, y1)
+        return RectF(x0, y0, x0+w, y0+h)
     }
 
     fun getLabel(): String {
-        return com.objdetection.Box.Companion.labels.get(label)
+        return labels[label]
     }
 
     fun getScore(): Float {

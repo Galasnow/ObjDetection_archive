@@ -2,14 +2,14 @@
 #define YOLOV4_H
 
 #include "ncnn/net.h"
-#include "YoloV5.h"
+#include "YOLOv5s.h"
 
 
-class YoloV4 {
+class YOLOv4 {
 public:
-    YoloV4(AAssetManager *mgr, const char *param, const char *bin, bool useGPU);
+    YOLOv4(AAssetManager *mgr, const char *param, const char *bin, bool useGPU);
 
-    ~YoloV4();
+    ~YOLOv4();
 
     std::vector<BoxInfo> detect(JNIEnv *env, jobject image, float threshold, float nms_threshold);
     std::vector<std::string> labels{"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
@@ -30,7 +30,7 @@ private:
     int input_size = 640 / 2;
     int num_class = 80;
 public:
-    static YoloV4 *detector;
+    static YOLOv4 *detector;
     static bool hasGPU;
     static bool toUseGPU;
 };

@@ -112,9 +112,7 @@ std::vector<BoxInfo> NanoDetPlus::detect(JNIEnv *env, jobject image, float score
     ex.set_num_threads(4);
 //    hasGPU = ncnn::get_gpu_count() > 0;
     //ex.set_vulkan_compute(hasGPU);
-    if (toUseGPU) {  // 消除提示
-        ex.set_vulkan_compute(toUseGPU);
-    }
+    ex.set_vulkan_compute(toUseGPU);
     ex.input("data", input);
     std::vector<std::vector<BoxInfo>> results;
     results.resize(this->num_class);
@@ -204,7 +202,8 @@ BoxInfo NanoDetPlus::disPred2Bbox(const float*& dfl_det, int label, float score,
     float ymax = (std::min)(ct_y + dis_pred[3], (float)this->input_size[0]) * height_ratio;
 
     //std::cout << xmin << "," << ymin << "," << xmax << "," << xmax << "," << std::endl;
-    return BoxInfo { xmin, ymin, xmax, ymax, score, label };
+//    return BoxInfo { xmin, ymin, xmax, ymax, score, label };
+    return BoxInfo { xmin, ymin, xmax-xmin, ymax-ymin, score, label };
 }
 
 void NanoDetPlus::nms(std::vector<BoxInfo>& input_boxes, float NMS_THRESH)
@@ -212,17 +211,23 @@ void NanoDetPlus::nms(std::vector<BoxInfo>& input_boxes, float NMS_THRESH)
     std::sort(input_boxes.begin(), input_boxes.end(), [](BoxInfo a, BoxInfo b) { return a.score > b.score; });
     std::vector<float> vArea(input_boxes.size());
     for (int i = 0; i < int(input_boxes.size()); ++i) {
-        vArea[i] = (input_boxes.at(i).x2 - input_boxes.at(i).x1 + 1)
-                   * (input_boxes.at(i).y2 - input_boxes.at(i).y1 + 1);
+//        vArea[i] = (input_boxes.at(i).x2 - input_boxes.at(i).x1 + 1)
+//                   * (input_boxes.at(i).y2 - input_boxes.at(i).y1 + 1);
+        vArea[i] = (input_boxes.at(i).w)
+                   * (input_boxes.at(i).h);
     }
     for (int i = 0; i < int(input_boxes.size()); ++i) {
         for (int j = i + 1; j < int(input_boxes.size());) {
             float xx1 = (std::max)(input_boxes[i].x1, input_boxes[j].x1);
             float yy1 = (std::max)(input_boxes[i].y1, input_boxes[j].y1);
-            float xx2 = (std::min)(input_boxes[i].x2, input_boxes[j].x2);
-            float yy2 = (std::min)(input_boxes[i].y2, input_boxes[j].y2);
-            float w = (std::max)(float(0), xx2 - xx1 + 1);
-            float h = (std::max)(float(0), yy2 - yy1 + 1);
+//            float xx2 = std::min(input_boxes[i].x2, input_boxes[j].x2);
+//            float yy2 = std::min(input_boxes[i].y2, input_boxes[j].y2);
+            float xx2 = std::min(input_boxes[i].x1+input_boxes[i].w, input_boxes[j].x1+input_boxes[j].w);
+            float yy2 = std::min(input_boxes[i].y1+input_boxes[i].h, input_boxes[j].y1+input_boxes[j].h);
+//            float w = (std::max)(float(0), xx2 - xx1 + 1);
+//            float h = (std::max)(float(0), yy2 - yy1 + 1);
+            float w = (std::max)(float(0), xx2 - xx1);
+            float h = (std::max)(float(0), yy2 - yy1);
             float inter = w * h;
             float ovr = inter / (vArea[i] + vArea[j] - inter);
             if (ovr >= NMS_THRESH) {

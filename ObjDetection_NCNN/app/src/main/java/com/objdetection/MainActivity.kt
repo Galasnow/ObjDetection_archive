@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity() {
     private fun initModel() {
         when (useModel) {
             NANODET -> NanoDetPlus.init(assets, useGPU)
-            YOLOV5S -> YOLOv5.init(assets, useGPU)
+            YOLOV5S -> YOLOv5s.init(assets, useGPU)
             YOLOV4_TINY -> YOLOv4tiny.init(assets, 0, useGPU)
         }
     }
@@ -491,7 +491,7 @@ class MainActivity : AppCompatActivity() {
         var result: Array<Box>? = null
         when (useModel) {
             NANODET -> result = NanoDetPlus.detect(image, threshold, nmsThreshold)
-            YOLOV5S -> result = YOLOv5.detect(image, threshold, nmsThreshold)
+            YOLOV5S -> result = YOLOv5s.detect(image, threshold, nmsThreshold)
             YOLOV4_TINY -> result = YOLOv4tiny.detect(image, threshold, nmsThreshold)
         }
 

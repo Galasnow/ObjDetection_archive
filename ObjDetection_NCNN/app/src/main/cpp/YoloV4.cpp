@@ -1,10 +1,10 @@
-#include "YoloV4.h"
+#include "YOLOv4.h"
 
-bool YoloV4::hasGPU = true;
-bool YoloV4::toUseGPU = true;
-YoloV4 *YoloV4::detector = nullptr;
+bool YOLOv4::hasGPU = true;
+bool YOLOv4::toUseGPU = true;
+YOLOv4 *YOLOv4::detector = nullptr;
 
-YoloV4::YoloV4(AAssetManager *mgr, const char *param, const char *bin, bool useGPU) {
+YOLOv4::YOLOv4(AAssetManager *mgr, const char *param, const char *bin, bool useGPU) {
     hasGPU = ncnn::get_gpu_count() > 0;
     toUseGPU = hasGPU && useGPU;
 
@@ -25,12 +25,12 @@ YoloV4::YoloV4(AAssetManager *mgr, const char *param, const char *bin, bool useG
     Net->load_model(mgr, bin);
 }
 
-YoloV4::~YoloV4() {
+YOLOv4::~YOLOv4() {
     Net->clear();
     delete Net;
 }
 
-std::vector<BoxInfo> YoloV4::detect(JNIEnv *env, jobject image, float threshold, float nms_threshold) {
+std::vector<BoxInfo> YOLOv4::detect(JNIEnv *env, jobject image, float threshold, float nms_threshold) {
     AndroidBitmapInfo img_size;
     AndroidBitmap_getInfo(env, image, &img_size);
     ncnn::Mat in_net = ncnn::Mat::from_android_bitmap_resize(env, image, ncnn::Mat::PIXEL_RGBA2RGB, input_size,
@@ -41,9 +41,7 @@ std::vector<BoxInfo> YoloV4::detect(JNIEnv *env, jobject image, float threshold,
     auto ex = Net->create_extractor();
     ex.set_light_mode(true);
     ex.set_num_threads(4);
-    if (toUseGPU) {  // 消除提示
-        ex.set_vulkan_compute(toUseGPU);
-    }
+    ex.set_vulkan_compute(toUseGPU);
     ex.input(0, in_net);
     std::vector<BoxInfo> result;
     ncnn::Mat blob;
@@ -68,17 +66,21 @@ inline float sigmoid(float x) {
 }
 
 std::vector<BoxInfo>
-YoloV4::decode_infer(ncnn::Mat &data, const yolocv::YoloSize &frame_size, int net_size, int num_classes, float threshold) {
+YOLOv4::decode_infer(ncnn::Mat &data, const yolocv::YoloSize &frame_size, int net_size, int num_classes, float threshold) {
     std::vector<BoxInfo> result;
     for (int i = 0; i < data.h; i++) {
         BoxInfo box;
         const float *values = data.row(i);
         box.label = values[0] - 1;
         box.score = values[1];
+//        box.x1 = values[2] * (float) frame_size.width;
+//        box.y1 = values[3] * (float) frame_size.height;
+//        box.x2 = values[4] * (float) frame_size.width;
+//        box.y2 = values[5] * (float) frame_size.height;
         box.x1 = values[2] * (float) frame_size.width;
         box.y1 = values[3] * (float) frame_size.height;
-        box.x2 = values[4] * (float) frame_size.width;
-        box.y2 = values[5] * (float) frame_size.height;
+        box.w = values[4] * (float) frame_size.width - values[2] * (float) frame_size.width;
+        box.h = values[5] * (float) frame_size.height - values[3] * (float) frame_size.height;
         result.push_back(box);
     }
     return result;
