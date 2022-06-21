@@ -205,7 +205,7 @@ class MainActivity : AppCompatActivity() {
             nmsThreshold = 0.6
         } else if (useModel == YOLOV5S) {
             threshold = 0.3
-            nmsThreshold = 0.7
+            nmsThreshold = 0.5
         }
         binding.nmsSeek.progress = (nmsThreshold * 100).toInt()
         binding.thresholdSeek.progress = (threshold * 100).toInt()

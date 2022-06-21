@@ -256,7 +256,9 @@ std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold
     auto ex = Net->create_extractor();
     ex.set_light_mode(true);
     ex.set_num_threads(4);
-    ex.set_vulkan_compute(toUseGPU);
+    if (toUseGPU) {
+        ex.set_vulkan_compute(toUseGPU);
+    }
 
     ex.input("in0", in_pad);
 

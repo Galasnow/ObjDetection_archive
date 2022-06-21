@@ -110,9 +110,11 @@ std::vector<BoxInfo> NanoDetPlus::detect(JNIEnv *env, jobject image, float score
     auto ex = this->Net->create_extractor();
     ex.set_light_mode(true);
     ex.set_num_threads(4);
-//    hasGPU = ncnn::get_gpu_count() > 0;
-    //ex.set_vulkan_compute(hasGPU);
-    ex.set_vulkan_compute(toUseGPU);
+
+
+    if (toUseGPU) {
+        ex.set_vulkan_compute(toUseGPU);
+    }
     ex.input("data", input);
     std::vector<std::vector<BoxInfo>> results;
     results.resize(this->num_class);

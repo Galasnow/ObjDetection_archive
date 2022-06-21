@@ -39,6 +39,9 @@
 #define NCNN_AVXVNNI 0
 #define NCNN_AVX512 0
 #define NCNN_AVX512VNNI 0
+#define NCNN_AVX512BF16 0
+#define NCNN_AVX512FP16 0
+#define NCNN_VFPV4 1
 #if __aarch64__
 #define NCNN_ARM82 1
 #define NCNN_ARM82DOT 1
@@ -50,7 +53,7 @@
 #define NCNN_BF16 1
 #define NCNN_FORCE_INLINE 1
 
-#define NCNN_VERSION_STRING "1.0.20220616"
+#define NCNN_VERSION_STRING "1.0.20220621"
 
 #include "ncnn_export.h"
 
