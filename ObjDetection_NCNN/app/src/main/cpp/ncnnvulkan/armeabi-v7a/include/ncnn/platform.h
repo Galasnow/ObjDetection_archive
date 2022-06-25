@@ -53,7 +53,7 @@
 #define NCNN_BF16 1
 #define NCNN_FORCE_INLINE 1
 
-#define NCNN_VERSION_STRING "1.0.20220621"
+#define NCNN_VERSION_STRING "1.0.20220624"
 
 #include "ncnn_export.h"
 
