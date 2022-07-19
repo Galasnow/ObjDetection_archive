@@ -19,7 +19,7 @@ class WelcomeActivity : AppCompatActivity() {
         binding = ActivityWelcomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.waringButton.setOnClickListener {
+        binding.warningButton.setOnClickListener {
             val builder = AlertDialog.Builder(this@WelcomeActivity)
             builder.setTitle("Warning")
             builder.setMessage("Please allow screen rotating.\nApp may crash when changing from landscape to portrait")
@@ -28,6 +28,16 @@ class WelcomeActivity : AppCompatActivity() {
             val dialog = builder.create()
             dialog.show()
         }
+
+        binding.settingButton.setOnClickListener {
+            val intent = Intent(this@WelcomeActivity, SettingsActivity::class.java)
+            this@WelcomeActivity.startActivity(intent)
+        }
+
+//        binding.settingButton1.setOnClickListener {
+//            val intent = Intent(this@WelcomeActivity, SettingsActivity::class.java)
+//            this@WelcomeActivity.startActivity(intent)
+//        }
 
         binding.tbUseGpu.setOnCheckedChangeListener{_, isChecked ->
             useGPU = isChecked
@@ -40,7 +50,7 @@ class WelcomeActivity : AppCompatActivity() {
                 val dialog = builder.create()
                 dialog.show()
             } else {
-                Toast.makeText(this@WelcomeActivity, "CPU mode", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@WelcomeActivity, "CPU Mode", Toast.LENGTH_SHORT).show()
             }
         }
 

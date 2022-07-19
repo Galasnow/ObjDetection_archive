@@ -29,8 +29,12 @@ YOLOv5s::YOLOv5s(AAssetManager *mgr, const char *param, const char *bin, bool us
     // improve most operator performance on all arm devices, may consume more memory
     this->Net->opt.use_bf16_storage = true;
 
-    Net->load_param(mgr, param);
-    Net->load_model(mgr, bin);
+//    Net->load_param(mgr, param);
+    if(Net->load_param(mgr, param))
+        exit(-1);
+    if(Net->load_model(mgr, bin))
+//    Net->load_model(mgr, bin);
+        exit(-1);
 }
 
 YOLOv5s::~YOLOv5s() {
@@ -102,7 +106,7 @@ static void qsort_descent_inplace(std::vector<BoxInfo>& faceobjects)
     qsort_descent_inplace(faceobjects, 0, faceobjects.size() - 1);
 }
 
-static void nms_sorted_bboxes(const std::vector<BoxInfo>& faceobjects, std::vector<int>& picked, float nms_threshold)
+static void nms_sorted_bboxes(const std::vector<BoxInfo>& faceobjects, std::vector<int>& picked, float nms_threshold, bool agnostic = false)
 {
     picked.clear();
 
@@ -122,6 +126,9 @@ static void nms_sorted_bboxes(const std::vector<BoxInfo>& faceobjects, std::vect
         for (int j = 0; j < (int)picked.size(); j++)
         {
             const BoxInfo& b = faceobjects[picked[j]];
+
+            if (!agnostic && a.label != b.label)
+                continue;
 
             // intersection over union
             float inter_area = intersection_area(a, b);
@@ -211,7 +218,7 @@ static void generate_proposals(const ncnn::Mat& anchors, int stride, const ncnn:
     }
 }
 
-std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold, float nms_threshold) {
+std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold, float nms_threshold, int threads_number) {
     AndroidBitmapInfo img_size;
     AndroidBitmap_getInfo(env, image, &img_size);
 
@@ -255,10 +262,18 @@ std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold
 
     auto ex = Net->create_extractor();
     ex.set_light_mode(true);
-    ex.set_num_threads(4);
-    if (toUseGPU) {
+
+    if (toUseGPU)
         ex.set_vulkan_compute(toUseGPU);
-    }
+    else
+        if(threads_number)
+            ex.set_num_threads(threads_number);
+//  this number is automatically set to the number of all big cores (details in NCNN option.h).
+//  However, for some SOC with 3 different architectures
+//  (e.g. Snapdragon 8 Gen 1, Kryo 1*Cortex-X2 @3.0 GHz + 3*Cortex-A710 @2.5GHz + 4*Cortex-A510 @1.8GHz),
+//  and some small model such as NanoDet-Plus,
+//  it may be much better to set this number to the number of super large cores,
+//  for Snapdragon 8 Gen 1, the best number is 1.
 
     ex.input("in0", in_pad);
 
@@ -329,7 +344,11 @@ std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold
     std::vector<BoxInfo> result;
     // apply nms with nms_threshold
     std::vector<int> picked;
-    nms_sorted_bboxes(proposals, picked, nms_threshold);
+
+    //ignore the label when NMS
+    bool agnostic = false;
+
+    nms_sorted_bboxes(proposals, picked, nms_threshold, agnostic);
 
     int count = picked.size();
 
@@ -358,194 +377,3 @@ std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold
 
     return result;
 }
-
-//inline float fast_exp(float x) {
-//    union {
-//        uint32_t i;
-//        float f;
-//    } v{};
-//    v.i = (1 << 23) * (1.4426950409 * x + 126.93490512f);
-//    return v.f;
-//}
-
-//inline float sigmoid(float x) {
-//    return 1.0f / (1.0f + fast_exp(-x));
-//}
-
-
-
-
-//std::vector<BoxInfo>
-//YOLOv5s::decode_infer(ncnn::Mat &feat_blob, int stride, const ncnn::Mat& in_pad, //const yolocv::YoloSize &frame_size,
-//        //int net_size, int num_classes,
-//                     const std::vector<yolocv::YoloSize> &anchors, float threshold) {
-//    std::vector<BoxInfo> result;
-//
-//    const int num_grid_x = feat_blob.w;
-//    const int num_grid_y = feat_blob.h;
-//
-//    //const int num_anchors = anchors.w / 2;
-//    const int num_anchors = 3;
-//    const int num_class = feat_blob.c / num_anchors - 5;
-//
-//    const int feat_offset = num_class + 5;
-//
-//    for (int q = 0; q < num_anchors; q++)
-//    {
-////        const float anchor_w = anchors[q * 2];
-////        const float anchor_h = anchors[q * 2 + 1];
-//        const int anchor_w = anchors[q * 2].width;
-//        const int anchor_h = anchors[q * 2 + 1].height;
-//
-//        for (int i = 0; i < num_grid_y; i++)
-//        {
-//            for (int j = 0; j < num_grid_x; j++)
-//            {
-//                // find class index with max class score
-//                int class_index = 0;
-//                float class_score = -FLT_MAX;
-//                for (int k = 0; k < num_class; k++)
-//                {
-//                    float score = feat_blob.channel(q * feat_offset + 5 + k).row(i)[j];
-//                    if (score > class_score)
-//                    {
-//                        class_index = k;
-//                        class_score = score;
-//                    }
-//                }
-//
-//                float box_score = feat_blob.channel(q * feat_offset + 4).row(i)[j];
-//
-//                float confidence = sigmoid(box_score) * sigmoid(class_score);
-//
-//                if (confidence >= threshold)
-//                {
-//                    // yolov5/models/yolo.py Detect forward
-//                    // y = x[i].sigmoid()
-//                    // y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
-//                    // y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
-//
-//                    float dx = sigmoid(feat_blob.channel(q * feat_offset + 0).row(i)[j]);
-//                    float dy = sigmoid(feat_blob.channel(q * feat_offset + 1).row(i)[j]);
-//                    float dw = sigmoid(feat_blob.channel(q * feat_offset + 2).row(i)[j]);
-//                    float dh = sigmoid(feat_blob.channel(q * feat_offset + 3).row(i)[j]);
-//
-//                    float pb_cx = (dx * 2.f - 0.5f + j) * stride;
-//                    float pb_cy = (dy * 2.f - 0.5f + i) * stride;
-//
-//                    float pb_w = pow(dw * 2.f, 2) * anchor_w;
-//                    float pb_h = pow(dh * 2.f, 2) * anchor_h;
-//
-//                    float x0 = pb_cx - pb_w * 0.5f;
-//                    float y0 = pb_cy - pb_h * 0.5f;
-//                    float x1 = pb_cx + pb_w * 0.5f;
-//                    float y1 = pb_cy + pb_h * 0.5f;
-//
-//                    BoxInfo obj;
-//                    obj.x1 = x0;
-//                    obj.y1 = y0;
-//                    obj.w = x1 - x0;
-//                    obj.h = y1 - y0;
-//                    obj.label = class_index;
-//                    obj.score = confidence;
-//
-//                    result.push_back(obj);
-//                }
-//            }
-//        }
-//    }
-//    return result;
-//}
-
-//std::vector<BoxInfo>
-//YOLOv5s::decode_infer(ncnn::Mat &data, int stride, const yolocv::YoloSize &frame_size, int net_size, int num_classes,
-//                     const std::vector<yolocv::YoloSize> &anchors, float threshold) {
-//    std::vector<BoxInfo> result;
-//
-////    const int num_grid_x = feat_blob.w;
-////    const int num_grid_y = feat_blob.h;
-////
-////    const int num_anchors = anchors.w / 2;
-////
-////    const int num_class = feat_blob.c / num_anchors - 5;
-////
-////    const int feat_offset = num_class + 5
-//
-//    int grid_size = int(sqrt(data.h));
-//    float *mat_data[data.c];
-//    for (int i = 0; i < data.c; i++) {
-//        mat_data[i] = data.channel(i);
-//    }
-//    float cx, cy, w, h;
-//    for (int shift_y = 0; shift_y < grid_size; shift_y++) {
-//        for (int shift_x = 0; shift_x < grid_size; shift_x++) {
-//            int loc = shift_x + shift_y * grid_size;
-//            for (int i = 0; i < 3; i++) {
-//                float *record = mat_data[i];
-//                float *cls_ptr = record + 5;
-//                for (int cls = 0; cls < num_classes; cls++) {
-//                    float score = sigmoid(cls_ptr[cls]) * sigmoid(record[4]);
-//                    if (score > threshold) {
-//                        cx = (sigmoid(record[0]) * 2.f - 0.5f + (float) shift_x) * (float) stride;
-//                        cy = (sigmoid(record[1]) * 2.f - 0.5f + (float) shift_y) * (float) stride;
-//                        w = pow(sigmoid(record[2]) * 2.f, 2) * anchors[i].width;
-//                        h = pow(sigmoid(record[3]) * 2.f, 2) * anchors[i].height;
-//                        //printf("[grid size=%d, stride = %d]x y w h %f %f %f %f\n",grid_size,stride,record[0],record[1],record[2],record[3]);
-//                        BoxInfo box;
-//                        box.x1 = std::max(0, std::min(frame_size.width, int((cx - w / 2.f) * (float) frame_size.width / (float) net_size)));
-//                        box.y1 = std::max(0, std::min(frame_size.height, int((cy - h / 2.f) * (float) frame_size.height / (float) net_size)));
-//                        box.w = std::max(0, std::min(frame_size.width, int((cx + w / 2.f) * (float) frame_size.width / (float) net_size)))-std::max(0, std::min(frame_size.width, int((cx - w / 2.f) * (float) frame_size.width / (float) net_size)));
-//                        box.h = std::max(0, std::min(frame_size.height, int((cy + h / 2.f) * (float) frame_size.height / (float) net_size)))-std::max(0, std::min(frame_size.height, int((cy - h / 2.f) * (float) frame_size.height / (float) net_size)));
-//                        box.score = score;
-//                        box.label = cls;
-//                        result.push_back(box);
-//                    }
-//                }
-//            }
-//            for (auto &ptr:mat_data) {
-//                ptr += (num_classes + 5);
-//            }
-//        }
-//    }
-//    return result;
-//}
-
-
-
-
-//void YOLOv5s::nms(std::vector<BoxInfo> &input_boxes, float NMS_THRESH) {
-////    std::sort(input_boxes.begin(), input_boxes.end(), [](BoxInfo a, BoxInfo b) { return a.score > b.score; });
-//    // sort all proposals by score from highest to lowest
-//    qsort_descent_inplace(input_boxes);
-//    std::vector<float> vArea(input_boxes.size());
-//    for (int i = 0; i < int(input_boxes.size()); ++i) {
-////        vArea[i] = (input_boxes.at(i).x2 - input_boxes.at(i).x1 + 1)
-////                   * (input_boxes.at(i).y2 - input_boxes.at(i).y1 + 1);
-//        vArea[i] = (input_boxes.at(i).w)
-//                   * (input_boxes.at(i).h);
-//    }
-//    for (int i = 0; i < int(input_boxes.size()); ++i) {
-//        for (int j = i + 1; j < int(input_boxes.size());) {
-//            float xx1 = std::max(input_boxes[i].x1, input_boxes[j].x1);
-//            float yy1 = std::max(input_boxes[i].y1, input_boxes[j].y1);
-////            float xx2 = std::min(input_boxes[i].x2, input_boxes[j].x2);
-////            float yy2 = std::min(input_boxes[i].y2, input_boxes[j].y2);
-//            float xx2 = std::min(input_boxes[i].x1+input_boxes[i].w, input_boxes[j].x1+input_boxes[j].w);
-//            float yy2 = std::min(input_boxes[i].y1+input_boxes[i].h, input_boxes[j].y1+input_boxes[j].h);
-////            float w = std::max(float(0), xx2 - xx1 + 1);
-////            float h = std::max(float(0), yy2 - yy1 + 1);
-//            float w = std::max(float(0), xx2 - xx1);
-//            float h = std::max(float(0), yy2 - yy1);
-//            float inter = w * h;
-//            float ovr = inter / (vArea[i] + vArea[j] - inter);
-//            if (ovr >= NMS_THRESH) {
-//                input_boxes.erase(input_boxes.begin() + j);
-//                vArea.erase(vArea.begin() + j);
-//            } else {
-//                j++;
-//            }
-//        }
-//    }
-//}
-
-

@@ -30,7 +30,7 @@ YOLOv4::~YOLOv4() {
     delete Net;
 }
 
-std::vector<BoxInfo> YOLOv4::detect(JNIEnv *env, jobject image, float threshold, float nms_threshold) {
+std::vector<BoxInfo> YOLOv4::detect(JNIEnv *env, jobject image, float threshold, float nms_threshold, int threads_number) {
     AndroidBitmapInfo img_size;
     AndroidBitmap_getInfo(env, image, &img_size);
     ncnn::Mat in_net = ncnn::Mat::from_android_bitmap_resize(env, image, ncnn::Mat::PIXEL_RGBA2RGB, input_size,
@@ -40,10 +40,19 @@ std::vector<BoxInfo> YOLOv4::detect(JNIEnv *env, jobject image, float threshold,
     in_net.substract_mean_normalize(mean, norm);
     auto ex = Net->create_extractor();
     ex.set_light_mode(true);
-    ex.set_num_threads(4);
-    if (toUseGPU) {
+
+    if (toUseGPU)
         ex.set_vulkan_compute(toUseGPU);
-    }
+    else
+        if(threads_number)
+            ex.set_num_threads(threads_number);
+//  this number is automatically set to the number of all big cores (details in NCNN option.h).
+//  However, for some SOC with 3 different architectures
+//  (e.g. Snapdragon 8 Gen 1, Kryo 1*Cortex-X2 @3.0 GHz + 3*Cortex-A710 @2.5GHz + 4*Cortex-A510 @1.8GHz),
+//  and some small model such as NanoDet-Plus,
+//  it may be much better to set this number to the number of super large cores,
+//  for Snapdragon 8 Gen 1, the best number is 1.
+
     ex.input(0, in_net);
     std::vector<BoxInfo> result;
     ncnn::Mat blob;

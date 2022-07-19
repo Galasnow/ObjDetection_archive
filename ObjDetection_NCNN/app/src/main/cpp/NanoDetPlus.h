@@ -30,7 +30,7 @@ public:
 
     ~NanoDetPlus();
 
-    std::vector<BoxInfo> detect(JNIEnv *env, jobject image, float score_threshold, float nms_threshold);
+    std::vector<BoxInfo> detect(JNIEnv *env, jobject image, float score_threshold, float nms_threshold, int threads_number);
 
     std::vector<std::string> labels{"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
                                     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",

@@ -44,8 +44,9 @@ Java_com_objdetection_NanoDetPlus_init(JNIEnv *env, jobject thiz, jobject assetM
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_objdetection_NanoDetPlus_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
-    auto result = NanoDetPlus::detector->detect(env, image, threshold, nms_threshold);
+Java_com_objdetection_NanoDetPlus_detect(JNIEnv *env, jobject thiz, jobject image, jfloat threshold,
+                                         jfloat nms_threshold, jint threads_number) {
+    auto result = NanoDetPlus::detector->detect(env, image, threshold, nms_threshold, threads_number);
 
     auto box_cls = env->FindClass("com/objdetection/Box");
     auto cid = env->GetMethodID(box_cls, "<init>", "(FFFFIF)V");
@@ -78,8 +79,9 @@ Java_com_objdetection_YOLOv5s_init(JNIEnv *env, jobject thiz, jobject assetManag
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_objdetection_YOLOv5s_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
-    auto result = YOLOv5s::detector->detect(env, image, threshold, nms_threshold);
+Java_com_objdetection_YOLOv5s_detect(JNIEnv *env, jobject thiz, jobject image, jfloat threshold,
+                                     jfloat nms_threshold, jint threads_number) {
+    auto result = YOLOv5s::detector->detect(env, image, threshold, nms_threshold, threads_number);
 
     auto box_cls = env->FindClass("com/objdetection/Box");
     auto cid = env->GetMethodID(box_cls, "<init>", "(FFFFIF)V");
@@ -125,8 +127,9 @@ Java_com_objdetection_YOLOv4tiny_init(JNIEnv *env, jobject thiz, jobject assetMa
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_objdetection_YOLOv4tiny_detect(JNIEnv *env, jobject thiz, jobject image, jdouble threshold, jdouble nms_threshold) {
-    auto result = YOLOv4::detector->detect(env, image, threshold, nms_threshold);
+Java_com_objdetection_YOLOv4tiny_detect(JNIEnv *env, jobject thiz, jobject image, jfloat threshold,
+                                        jfloat nms_threshold, jint threads_number) {
+    auto result = YOLOv4::detector->detect(env, image, threshold, nms_threshold, threads_number);
 
     auto box_cls = env->FindClass("com/objdetection/Box");
     auto cid = env->GetMethodID(box_cls, "<init>", "(FFFFIF)V");

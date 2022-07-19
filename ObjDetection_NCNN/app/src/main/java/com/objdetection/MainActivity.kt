@@ -4,6 +4,7 @@ package com.objdetection
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.database.Cursor
@@ -25,6 +26,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
+import androidx.preference.PreferenceManager
 import coil.load
 import com.objdetection.databinding.ActivityMainBinding
 import wseemann.media.FFmpegMediaMetadataRetriever
@@ -34,6 +36,7 @@ import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+
 
 //******ImageAnalysis Function Test******//
 //typealias LumaListener = (luma: Double) -> Unit
@@ -49,8 +52,8 @@ class MainActivity : AppCompatActivity() {
     private var useModel = NANODET
     private var useGPU = false
 
-    var threshold = 0.3
-    var nmsThreshold = 0.7
+    var threshold = 0.3f
+    var nmsThreshold = 0.7f
 
     var videoSpeed = 1.0f
     var videoCurFrameLoc: Long = 0
@@ -68,6 +71,7 @@ class MainActivity : AppCompatActivity() {
     var width = 0
     var height = 0
 
+    private var threadsNumber = 0
     private var startTime: Long = 0
     private var endTime: Long = 0
     private var totalFPS = 0.0
@@ -109,6 +113,19 @@ class MainActivity : AppCompatActivity() {
         initView()
         initViewListener()
 
+        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+//        println(prefs.getString("numThreads", "<unset>")) //<unset>表示没有查到numThreads这个key的返回值
+        //number of threads in CPU Mode
+        threadsNumber = prefs.getString("numThreads", "<unset>")?.toInt()!!
+//        Log.d(TAG, "numThreads: $threadsNumber")
+
+//        Coil.setImageLoader {
+//            ImageLoader(this).newBuilder()
+//                .components {
+//                    add(AppIconFetcherFactory(this@MainActivity))
+//                }
+//                .build()
+//        }
 //        val imageLoader = context?.let {
 //            ImageLoader.Builder(it)
 //                .crossfade(true)
@@ -201,11 +218,11 @@ class MainActivity : AppCompatActivity() {
             binding.thresholdSeek.visibility = View.GONE
             binding.valTxtView.visibility = View.GONE
         } else if (useModel == NANODET) {
-            threshold = 0.4
-            nmsThreshold = 0.6
+            threshold = 0.4f
+            nmsThreshold = 0.6f
         } else if (useModel == YOLOV5S) {
-            threshold = 0.3
-            nmsThreshold = 0.5
+            threshold = 0.3f
+            nmsThreshold = 0.5f
         }
         binding.nmsSeek.progress = (nmsThreshold * 100).toInt()
         binding.thresholdSeek.progress = (threshold * 100).toInt()
@@ -215,7 +232,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.nmsSeek.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                nmsThreshold = (i / 100f).toDouble()
+                nmsThreshold = (i / 100f)
                 binding.valTxtView.text =
                     String.format(Locale.ENGLISH, format, threshold, nmsThreshold)
             }
@@ -226,7 +243,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.thresholdSeek.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                threshold = (i / 100f).toDouble()
+                threshold = (i / 100f)
                 binding.valTxtView.text =
                     String.format(Locale.ENGLISH, format, threshold, nmsThreshold)
             }
@@ -490,9 +507,9 @@ class MainActivity : AppCompatActivity() {
     private fun detectAndDraw(image: Bitmap): Bitmap? {
         var result: Array<Box>? = null
         when (useModel) {
-            NANODET -> result = NanoDetPlus.detect(image, threshold, nmsThreshold)
-            YOLOV5S -> result = YOLOv5s.detect(image, threshold, nmsThreshold)
-            YOLOV4_TINY -> result = YOLOv4tiny.detect(image, threshold, nmsThreshold)
+            NANODET -> result = NanoDetPlus.detect(image, threshold, nmsThreshold, threadsNumber)
+            YOLOV5S -> result = YOLOv5s.detect(image, threshold, nmsThreshold, threadsNumber)
+            YOLOV4_TINY -> result = YOLOv4tiny.detect(image, threshold, nmsThreshold, threadsNumber)
         }
 
         if (result == null) {
