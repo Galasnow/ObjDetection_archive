@@ -1,4 +1,4 @@
-# ObjDetetion
+# ObjDetection
 
 ****
 
