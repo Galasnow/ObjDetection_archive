@@ -29,11 +29,9 @@ YOLOv5s::YOLOv5s(AAssetManager *mgr, const char *param, const char *bin, bool us
     // improve most operator performance on all arm devices, may consume more memory
     this->Net->opt.use_bf16_storage = true;
 
-//    Net->load_param(mgr, param);
-    if(Net->load_param(mgr, param))
+    if(this->Net->load_param(mgr, param))
         exit(-1);
-    if(Net->load_model(mgr, bin))
-//    Net->load_model(mgr, bin);
+    if(this->Net->load_model(mgr, bin))
         exit(-1);
 }
 
@@ -106,7 +104,7 @@ static void qsort_descent_inplace(std::vector<BoxInfo>& faceobjects)
     qsort_descent_inplace(faceobjects, 0, faceobjects.size() - 1);
 }
 
-static void nms_sorted_bboxes(const std::vector<BoxInfo>& faceobjects, std::vector<int>& picked, float nms_threshold, bool agnostic = false)
+static void nms_sorted_bboxes(const std::vector<BoxInfo>& faceobjects, std::vector<int>& picked, float nms_threshold, bool agnostic)
 {
     picked.clear();
 
@@ -123,16 +121,16 @@ static void nms_sorted_bboxes(const std::vector<BoxInfo>& faceobjects, std::vect
         const BoxInfo& a = faceobjects[i];
 
         int keep = 1;
-        for (int j = 0; j < (int)picked.size(); j++)
+        for (int j : picked)
         {
-            const BoxInfo& b = faceobjects[picked[j]];
+            const BoxInfo& b = faceobjects[j];
 
             if (!agnostic && a.label != b.label)
                 continue;
 
             // intersection over union
             float inter_area = intersection_area(a, b);
-            float union_area = areas[i] + areas[picked[j]] - inter_area;
+            float union_area = areas[i] + areas[j] - inter_area;
             // float IoU = inter_area / union_area
             if (inter_area / union_area > nms_threshold)
                 keep = 0;
@@ -233,7 +231,7 @@ std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold
     // letterbox pad to multiple of max_stride
     int w = img_w;
     int h = img_h;
-    float scale = 1.f;
+    float scale;
     if (w > h)
     {
         scale = (float)target_size / w;
@@ -271,7 +269,7 @@ std::vector<BoxInfo> YOLOv5s::detect(JNIEnv *env, jobject image, float threshold
 //  this number is automatically set to the number of all big cores (details in NCNN option.h).
 //  However, for some SOC with 3 different architectures
 //  (e.g. Snapdragon 8 Gen 1, Kryo 1*Cortex-X2 @3.0 GHz + 3*Cortex-A710 @2.5GHz + 4*Cortex-A510 @1.8GHz),
-//  and some small model such as NanoDet-Plus,
+//  and some small models such as NanoDet-Plus,
 //  it may be much better to set this number to the number of super large cores,
 //  for Snapdragon 8 Gen 1, the best number is 1.
 

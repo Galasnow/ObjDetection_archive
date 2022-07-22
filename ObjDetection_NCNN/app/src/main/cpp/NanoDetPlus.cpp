@@ -23,11 +23,11 @@ inline float sigmoid(float x)
     return 1.0f / (1.0f + fast_exp(-x));
 }
 
-template<typename _Tp>
-int activation_function_softmax(const _Tp* src, _Tp* dst, int length)
+template<typename Tp>
+int activation_function_softmax(const Tp* src, Tp* dst, int length)
 {
-    const _Tp alpha = *std::max_element(src, src + length);
-    _Tp denominator{ 0 };
+    const Tp alpha = *std::max_element(src, src + length);
+    Tp denominator{ 0 };
 
     for (int i = 0; i < length; ++i) {
         dst[i] = fast_exp(src[i] - alpha);
@@ -43,9 +43,8 @@ int activation_function_softmax(const _Tp* src, _Tp* dst, int length)
 
 static void generate_grid_center_priors(const int input_height, const int input_width, std::vector<int>& strides, std::vector<CenterPrior>& center_priors)
 {
-    for (int i = 0; i < (int)strides.size(); i++)
+    for (int stride : strides)
     {
-        int stride = strides[i];
         int feat_w = ceil((float)input_width / stride);
         int feat_h = ceil((float)input_height / stride);
         for (int y = 0; y < feat_h; y++)
@@ -78,8 +77,10 @@ NanoDetPlus::NanoDetPlus(AAssetManager *mgr, const char *param, const char *bin,
     // improve most operator performance on all arm devices, may consume more memory
     this->Net->opt.use_bf16_storage = true;
 
-    this->Net->load_param(mgr, param);
-    this->Net->load_model(mgr, bin);
+    if(this->Net->load_param(mgr, param))
+        exit(-1);
+    if(this->Net->load_model(mgr, bin))
+        exit(-1);
 }
 
 NanoDetPlus::~NanoDetPlus()
@@ -118,7 +119,7 @@ std::vector<BoxInfo> NanoDetPlus::detect(JNIEnv *env, jobject image, float score
 //  this number is automatically set to the number of all big cores (details in NCNN option.h).
 //  However, for some SOC with 3 different architectures
 //  (e.g. Snapdragon 8 Gen 1, Kryo 1*Cortex-X2 @3.0 GHz + 3*Cortex-A710 @2.5GHz + 4*Cortex-A510 @1.8GHz),
-//  and some small model such as NanoDet-Plus,
+//  and some small models such as NanoDet-Plus,
 //  it may be much better to set this number to the number of super large cores,
 //  for Snapdragon 8 Gen 1, the best number is 1.
 
@@ -137,11 +138,11 @@ std::vector<BoxInfo> NanoDetPlus::detect(JNIEnv *env, jobject image, float score
     this->decode_infer(out, center_priors, score_threshold, results, width_ratio, height_ratio);
 
     std::vector<BoxInfo> dets;
-    for (int i = 0; i < (int)results.size(); i++)
+    for (auto & result : results)
     {
-        this->nms(results[i], nms_threshold);
+        NanoDetPlus::nms(result, nms_threshold);
 
-        for (auto box : results[i])
+        for (auto box : result)
         {
             dets.push_back(box);
         }
@@ -212,7 +213,7 @@ BoxInfo NanoDetPlus::disPred2Bbox(const float*& dfl_det, int label, float score,
 
     //std::cout << xmin << "," << ymin << "," << xmax << "," << xmax << "," << std::endl;
 //    return BoxInfo { xmin, ymin, xmax, ymax, score, label };
-    return BoxInfo { xmin, ymin, xmax-xmin, ymax-ymin, score, label };
+    return BoxInfo { xmin, ymin, xmax - xmin, ymax - ymin, score, label };
 }
 
 void NanoDetPlus::nms(std::vector<BoxInfo>& input_boxes, float NMS_THRESH)
@@ -231,8 +232,8 @@ void NanoDetPlus::nms(std::vector<BoxInfo>& input_boxes, float NMS_THRESH)
             float yy1 = (std::max)(input_boxes[i].y1, input_boxes[j].y1);
 //            float xx2 = std::min(input_boxes[i].x2, input_boxes[j].x2);
 //            float yy2 = std::min(input_boxes[i].y2, input_boxes[j].y2);
-            float xx2 = std::min(input_boxes[i].x1+input_boxes[i].w, input_boxes[j].x1+input_boxes[j].w);
-            float yy2 = std::min(input_boxes[i].y1+input_boxes[i].h, input_boxes[j].y1+input_boxes[j].h);
+            float xx2 = std::min(input_boxes[i].x1 + input_boxes[i].w, input_boxes[j].x1 + input_boxes[j].w);
+            float yy2 = std::min(input_boxes[i].y1 + input_boxes[i].h, input_boxes[j].y1 + input_boxes[j].h);
 //            float w = (std::max)(float(0), xx2 - xx1 + 1);
 //            float h = (std::max)(float(0), yy2 - yy1 + 1);
             float w = (std::max)(float(0), xx2 - xx1);

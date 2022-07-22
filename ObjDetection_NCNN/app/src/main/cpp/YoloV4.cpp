@@ -21,8 +21,10 @@ YOLOv4::YOLOv4(AAssetManager *mgr, const char *param, const char *bin, bool useG
     // improve most operator performance on all arm devices, may consume more memory
     this->Net->opt.use_bf16_storage = true;
 
-    Net->load_param(mgr, param);
-    Net->load_model(mgr, bin);
+    if(this->Net->load_param(mgr, param))
+        exit(-1);
+    if(this->Net->load_model(mgr, bin))
+        exit(-1);
 }
 
 YOLOv4::~YOLOv4() {
@@ -49,7 +51,7 @@ std::vector<BoxInfo> YOLOv4::detect(JNIEnv *env, jobject image, float threshold,
 //  this number is automatically set to the number of all big cores (details in NCNN option.h).
 //  However, for some SOC with 3 different architectures
 //  (e.g. Snapdragon 8 Gen 1, Kryo 1*Cortex-X2 @3.0 GHz + 3*Cortex-A710 @2.5GHz + 4*Cortex-A510 @1.8GHz),
-//  and some small model such as NanoDet-Plus,
+//  and some small models such as NanoDet-Plus,
 //  it may be much better to set this number to the number of super large cores,
 //  for Snapdragon 8 Gen 1, the best number is 1.
 
