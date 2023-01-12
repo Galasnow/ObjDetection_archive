@@ -96,4 +96,8 @@ Deconvolution3D = 90,
 DeconvolutionDepthWise3D = 91,
 Einsum = 92,
 DeformableConv2D = 93,
+GLU = 94,
+Fold = 95,
+Unfold = 96,
+GridSample = 97,
 
